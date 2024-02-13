@@ -18,4 +18,13 @@
 
 ## Features & Development 
 - V1.0.0
-  - veeva authenticate  (Basic Auth Supported as of now with SAP CPI sequrity matrial to store it securely) and process execute next call for query (VQL) 
+  - Veeva authenticate (Basic Auth Supported as of now with SAP CPI sequrity matrial to store it securely) and process execute next call for query (VQL)
+ 
+  - __**NOTE**__: test_veeva_server.js file is host local web-server. where i try to mimic the veeva responses for your reference. Incase if you want to know , how it works....
+    
+# Privacy and Data Protection
+- The plugin is designed to protect your privacy and does not collect any personal data. You can trust that:
+
+- No personal data is collected
+- No urls, tenant names, iflow names, etc. are collected
+- The data does not leave, except for where you expose it in SAP CPI, to any internal/external service/server/site/vendor.
