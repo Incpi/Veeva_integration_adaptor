@@ -6,6 +6,9 @@ const port = 3000;
 
 app.use(bodyParser.json());
 const Authorizations = new Map();
+Authorizations.set("testid1", true);
+Authorizations.set("authorization", true);
+
 app.post("/auth", bodyParser.urlencoded({ extended: true }), (req, res) => {
   const { username, password } = req.body;
   console.log(req.headers);
@@ -15,7 +18,11 @@ app.post("/auth", bodyParser.urlencoded({ extended: true }), (req, res) => {
       Math.random().toString(36).substring(2, 15) +
       Math.random().toString(36).substring(2, 15);
     if (contenttype.toLowerCase() === "application/xml") {
-      `<response><responseStatus>SUCCESS</responseStatus><sessionId>${authorization}</sessionId><userId>12021</userId></response>`;
+      res
+        .status(200)
+        .send(
+          `<response><responseStatus>SUCCESS</responseStatus><sessionId>${authorization}</sessionId><userId>12021</userId></response>`,
+        );
     } else {
       Authorizations.set(authorization, true);
       res.json({
@@ -31,7 +38,7 @@ app.post("/auth", bodyParser.urlencoded({ extended: true }), (req, res) => {
 });
 
 app.post("/query", (req, res) => {
-  console.log(req.headers);
+  console.log(req.body);
   const Authorization = req.headers["Authorization".toLowerCase()];
   const contenttype = req.headers["Accept".toLowerCase()];
 
@@ -42,7 +49,7 @@ app.post("/query", (req, res) => {
       res.status(200).send(retrievedDocument);
     } else {
       const retrievedDocument = {
-         responseStatus: "SUCCESS",
+        responseStatus: "SUCCESS",
         data: [
           {
             id: documentId,
@@ -54,8 +61,15 @@ app.post("/query", (req, res) => {
       res.status(200).json(retrievedDocument);
     }
   } else {
-    res.status(401).json({ responseStatus: "Failure" });
+    if (contenttype.toLowerCase() === "application/xml") {
+      +res
+        .status(401)
+        .send(`<response><responseStatus>SUCCESS</responseStatus></response>`);
+    } else {
+      res.status(401).json({ responseStatus: "Failure" });
+    }
   }
+  console.log(res.body);
 });
 
 const server = app.listen(port, () => {
@@ -66,16 +80,26 @@ const request = supertest(server);
 request
   .post("/auth")
   .send("username=a&password=a")
+  .set("Accept", "application/xml")
+  .expect(200)
+  .then((e) => console.log(e.text));
+
+request1 = supertest(server);
+request1
+  .post("/auth")
+  .send("username=a&password=a")
   .set("Accept", "application/json")
   .expect(200)
   .end((err, res) => {
+    console.log(res.body);
     if (err) {
       console.error(err);
       return;
     }
+
     const Authorization = res.body.sessionId;
-   
-    request
+
+    request1
       .post("/query?q=SELECT id FROM documents")
       .set("Authorization", Authorization)
       .set("Accept", "application/json")
@@ -85,12 +109,23 @@ request
           console.error(err);
           return;
         }
-        console.log("JSON Document Retrieval Test Passed!");
-        console.log(res.body);
       });
 
     // Make XML document retrieval request
-    request
+    try {
+      request1
+        .post("/query?q=1_xml")
+        .set("Authorization", "123")
+        .set("Accept", "application/xml")
+        .expect(401)
+        .end((err, res) => {
+          if (err) {
+            console.error(err);
+            return;
+          }
+        });
+    } catch (err) {}
+    request1
       .post("/query?q=1_xml")
       .set("Authorization", Authorization)
       .set("Accept", "application/xml")
@@ -101,6 +136,5 @@ request
           return;
         }
         console.log("XML Document Retrieval Test Passed!");
-        console.log(res.text);
       });
   });
